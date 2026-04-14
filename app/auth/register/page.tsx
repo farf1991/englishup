@@ -6,9 +6,12 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
 
-const GRADES_PRIMAIRE = ['1ère année','2ème année','3ème année','4ème année','5ème année','6ème année']
-const GRADES_COLLEGE = ['1ère collège','2ème collège','3ème collège']
-const GRADES_LYCEE = ['Tronc commun','1ère bac','2ème bac']
+const GRADES_PRIMAIRE = [
+  'CP (1ère année)','CE1 (2ème année)','CE2 (3ème année)',
+  'CM1 (4ème année)','CM2 (5ème année)','6ème (6ème année)'
+]
+const GRADES_COLLEGE = ['5ème (1ère collège)','4ème (2ème collège)','3ème (3ème collège)']
+const GRADES_LYCEE = ['2nde (Tronc commun)','1ère (1ère bac)','Terminale (2ème bac)']
 
 function getAgeGroup(dob) {
   const age = new Date().getFullYear() - new Date(dob).getFullYear()
@@ -25,7 +28,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ child_first_name:'',child_last_name:'',child_dob:'',child_gender:'',child_school:'',child_grade:'',phone:'',email:'',password:'' })
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const ageGroup = form.child_dob ? getAgeGroup(form.child_dob) : null
-  const inputClass = "w-full border-2 border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-blue-400 bg-white"
+  const inputClass = "w-full border-2 border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-blue-400 bg-white text-gray-900"
   const labelClass = "block text-xs font-black text-gray-500 uppercase tracking-wide mb-1.5"
 
   async function handleSubmit() {
