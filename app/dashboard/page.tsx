@@ -1,213 +1,92 @@
 // @ts-nocheck
-import { createServerSupabaseClient } from '@/lib/supabase'
-import { redirect } from 'next/navigation'
-import { format, subDays, isToday, isYesterday } from 'date-fns'
-import { fr } from 'date-fns/locale'
-import Link from 'next/link'
-import type { Child, Session, Enrollment } from '@/types/database'
-import LogoutButton from '@/components/LogoutButton'
-import Heatmap from '@/components/Heatmap'
-import ScoreChart from '@/components/ScoreChart'
+'use client'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
 
-export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient()
+export default function Dashboard() {
+  const [child, setChild] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { window.location.href = '/auth/login'; return }
+      const { data: parent } = await supabase.from('parents').select('id').eq('auth_id', user.id).single()
+      if (!parent) { setLoading(false); return }
+      const { data: childData } = await supabase.from('children').select('*').eq('parent_id', parent.id).single()
+      setChild(childData)
+      setLoading(false)
+    }
+    load()
+  }, [])
 
-  // Fetch parent + children
-  const { data: parent } = await supabase
-    .from('parents')
-    .select('*')
-    .eq('auth_id', user.id)
-    .single()
+  if (loading) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#040D1A',color:'white'}}><p>Chargement...</p></div>
 
-  if (!parent) redirect('/auth/login')
+  if (!child) return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#040D1A',color:'white',padding:'24px',textAlign:'center'}}>
+      <div style={{fontSize:'48px',marginBottom:'16px'}}>⏳</div>
+      <h1 style={{fontSize:'22px',fontWeight:'900',marginBottom:'8px'}}>Compte en attente</h1>
+      <p style={{color:'#9CA3AF',marginBottom:'24px'}}>Votre compte sera activé après réception du virement de 379 DHS.</p>
+      <p style={{color:'#9CA3AF',fontSize:'14px'}}>Des questions ? WhatsApp : <a href="https://wa.me/0033665791697" style={{color:'#00B4D8'}}>0033665791697</a></p>
+      <button onClick={async () => { await createClient().auth.signOut(); window.location.href = '/auth/login' }}
+        style={{marginTop:'24px',padding:'12px 24px',background:'#374151',border:'none',borderRadius:'12px',color:'white',cursor:'pointer'}}>
+        Se déconnecter
+      </button>
+    </div>
+  )
 
-  const { data: children } = await supabase
-    .from('children')
-    .select('*')
-    .eq('parent_id', parent.id)
-
-  const child: Child | null = children?.[0] || null
-
-  if (!child) redirect('/auth/register')
-
-  // Si compte en attente
-  if (child.status === 'pending') redirect('/dashboard/pending')
-
-  // Fetch sessions
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('child_id', child.id)
-    .order('completed_at', { ascending: false })
-
-  // Fetch enrollment
-  const { data: enrollment } = await supabase
-    .from('enrollments')
-    .select('*')
-    .eq('child_id', child.id)
-    .single()
-
-  const allSessions: Session[] = sessions || []
-
-  // Calculs
-  const completedCount = child.current_session
-  const pct = Math.round((completedCount / 60) * 100)
-  const sessionsThisWeek = allSessions.filter(s => {
-    const d = new Date(s.completed_at)
-    return d >= subDays(new Date(), 7)
-  }).length
-  const avgScore = allSessions.length > 0
-    ? Math.round(allSessions.reduce((a, s) => a + (s.score / Math.max(s.total_questions, 1)) * 100, 0) / allSessions.length)
-    : 0
-
-  const lastSessionDate = child.last_session_at ? new Date(child.last_session_at) : null
-  const sessionToday = lastSessionDate && isToday(lastSessionDate)
-  const missedDays = !sessionToday && lastSessionDate
-    ? Math.floor((Date.now() - lastSessionDate.getTime()) / 86400000)
-    : 0
-
-  const ageGroupLabel = { explorer: 'Explorers 🦁', adventurer: 'Adventurers 🚀', champion: 'Champions 🎯' }
+  const pct = Math.round((child.current_session / 60) * 100)
 
   return (
-    <div className="mobile-container bg-[#F0F4F8] min-h-screen pb-8">
-
-      {/* HEADER gradient */}
-      <div className="bg-gradient-to-br from-[#00B4D8] to-[#7B2FBE] px-5 pt-10 pb-6">
-        <div className="flex justify-between items-start mb-5">
+    <div style={{minHeight:'100vh',background:'#040D1A',color:'white',fontFamily:'sans-serif'}}>
+      <div style={{background:'linear-gradient(135deg,#00B4D8,#7B2FBE)',padding:'32px 20px 24px'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:'20px'}}>
           <div>
-            <p className="text-xs text-white/60 font-semibold mb-0.5">Dashboard parent</p>
-            <h1 className="text-2xl font-black text-white">{child.first_name} {child.last_name}</h1>
-            <p className="text-sm text-white/70 font-semibold">
-              {ageGroupLabel[child.age_group]} · {child.grade} · {child.school}
-            </p>
+            <div style={{fontSize:'22px',fontWeight:'900'}}>Bonjour ! 👋</div>
+            <div style={{fontSize:'28px',fontWeight:'900',marginTop:'4px'}}>{child.first_name} {child.last_name}</div>
+            <div style={{fontSize:'13px',color:'rgba(255,255,255,0.6)',marginTop:'4px'}}>{child.grade} · {child.school}</div>
           </div>
-          <div className="bg-white/20 rounded-2xl px-4 py-3 text-center">
-            <div className="text-2xl">🔥</div>
-            <div className="text-xl font-black text-white">{child.streak}</div>
-            <div className="text-xs text-white/60 font-bold">jours</div>
+          <div style={{background:'rgba(255,255,255,0.15)',borderRadius:'16px',padding:'12px 16px',textAlign:'center'}}>
+            <div style={{fontSize:'24px',fontWeight:'900'}}>{child.streak}</div>
+            <div style={{fontSize:'11px',color:'rgba(255,255,255,0.6)'}}>🔥 streak</div>
           </div>
         </div>
-
-        {/* Session alert */}
-        {missedDays >= 2 && (
-          <div className="bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
-            <span className="text-xl">⚠️</span>
-            <p className="text-sm text-white font-bold">
-              {child.first_name} n'a pas fait de session depuis {missedDays} jours !
-            </p>
+        <div style={{background:'rgba(255,255,255,0.1)',borderRadius:'16px',padding:'16px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'8px'}}>
+            <span style={{fontSize:'13px',fontWeight:'700'}}>Progression</span>
+            <span style={{fontSize:'13px',fontWeight:'900'}}>{child.current_session}/60 sessions</span>
           </div>
-        )}
-        {sessionToday && (
-          <div className="bg-green-500/20 border border-green-400/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
-            <span className="text-xl">✅</span>
-            <p className="text-sm text-white font-bold">{child.first_name} a fait sa session aujourd'hui !</p>
-          </div>
-        )}
-
-        {/* 60 sessions progress */}
-        <div className="bg-white/10 rounded-2xl px-4 py-4">
-          <div className="flex justify-between mb-2">
-            <span className="text-sm text-white/80 font-bold">Programme 60 sessions</span>
-            <span className="text-sm text-white font-black">{completedCount}/60</span>
-          </div>
-          <div className="h-3 bg-white/20 rounded-full overflow-hidden mb-2 relative">
-            <div className="h-full bg-white rounded-full transition-all duration-700"
-              style={{ width: `${pct}%` }} />
-            {/* Milestone marker at session 30 */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white"
-              style={{ background: completedCount >= 30 ? '#FFD93D' : 'rgba(255,255,255,0.3)' }} />
-          </div>
-          <div className="flex justify-between text-xs text-white/50 font-bold">
-            <span>Début</span>
-            <span className={completedCount >= 30 ? 'text-yellow-300' : ''}>🧪 Test 1 (s.30)</span>
-            <span className={completedCount >= 60 ? 'text-yellow-300' : ''}>🏆 Test 2 (s.60)</span>
+          <div style={{height:'8px',background:'rgba(255,255,255,0.2)',borderRadius:'4px',overflow:'hidden'}}>
+            <div style={{height:'100%',background:'white',borderRadius:'4px',width:pct+'%'}} />
           </div>
         </div>
       </div>
-
-      <div className="px-5 mt-5 space-y-4">
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Sessions faites', value: `${completedCount}/60`, sub: `${sessionsThisWeek} cette semaine`, icon: '📅' },
-            { label: 'Score moyen', value: `${avgScore}%`, sub: allSessions.length > 0 ? `sur ${allSessions.length} sessions` : 'Aucune session', icon: '📊' },
-            { label: 'Streak actuel', value: `${child.streak} jours`, sub: child.streak >= 7 ? '🔥 Incroyable !' : 'Continue !', icon: '🔥' },
-            { label: 'XP total', value: child.total_xp.toLocaleString(), sub: 'points gagnés', icon: '⚡' },
-          ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 shadow-sm">
-              <div className="text-2xl mb-2">{s.icon}</div>
-              <div className="text-xl font-black text-gray-900">{s.value}</div>
-              <div className="text-xs font-bold text-gray-500">{s.label}</div>
-              <div className="text-xs text-gray-400">{s.sub}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Heatmap assiduité */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h2 className="text-base font-black text-gray-900 mb-4">📅 Assiduité — 5 semaines</h2>
-          <Heatmap sessions={allSessions} />
-        </div>
-
-        {/* Score chart */}
-        {allSessions.length >= 3 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h2 className="text-base font-black text-gray-900 mb-4">📈 Évolution des scores</h2>
-            <ScoreChart sessions={allSessions.slice().reverse()} />
+      <div style={{padding:'20px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'20px'}}>
+          <div style={{background:'#1B3A6B',borderRadius:'16px',padding:'16px',textAlign:'center'}}>
+            <div style={{fontSize:'28px',fontWeight:'900',color:'#FFD93D'}}>⚡ {child.total_xp}</div>
+            <div style={{fontSize:'12px',color:'#9CA3AF',marginTop:'4px'}}>XP total</div>
           </div>
-        )}
-
-        {/* Prochain test bilan */}
-        {completedCount < 30 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-4">
-            <span className="text-3xl">🧪</span>
-            <div>
-              <p className="font-black text-amber-900 text-sm">Test bilan 1 dans {30 - completedCount} sessions</p>
-              <p className="text-xs text-amber-700">Un rapport PDF vous sera envoyé après le test.</p>
-            </div>
-          </div>
-        )}
-        {completedCount >= 30 && completedCount < 60 && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-4">
-            <span className="text-3xl">🏆</span>
-            <div>
-              <p className="font-black text-green-900 text-sm">Test bilan 2 dans {60 - completedCount} sessions</p>
-              <p className="text-xs text-green-700">Dernière ligne droite !</p>
-            </div>
-          </div>
-        )}
-        {completedCount >= 60 && (
-          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center gap-4">
-            <span className="text-3xl">🎓</span>
-            <div>
-              <p className="font-black text-purple-900 text-sm">Programme terminé !</p>
-              <p className="text-xs text-purple-700">Certificat disponible · Félicitations à {child.first_name} !</p>
-            </div>
-          </div>
-        )}
-
-        {/* Alertes SMS info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3">
-          <span className="text-xl">📱</span>
-          <div>
-            <p className="text-sm font-black text-blue-900">Alertes SMS actives</p>
-            <p className="text-xs text-blue-700">SMS envoyé si {child.first_name} manque 2 sessions consécutives.</p>
+          <div style={{background:'#1B3A6B',borderRadius:'16px',padding:'16px',textAlign:'center'}}>
+            <div style={{fontSize:'28px',fontWeight:'900',color:'#06D6A0'}}>{child.english_level}</div>
+            <div style={{fontSize:'12px',color:'#9CA3AF',marginTop:'4px'}}>Niveau</div>
           </div>
         </div>
-
-        {/* Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link href={`/session`}
-            className="bg-gradient-to-r from-[#00B4D8] to-[#7B2FBE] rounded-2xl p-4 text-center text-white font-black text-sm shadow-lg">
-            ▶ Lancer la session de {child.first_name}
-          </Link>
-          <LogoutButton />
-        </div>
-
+        {child.status === 'active' ? (
+          <a href="/session" style={{display:'block',padding:'20px',background:'linear-gradient(135deg,#FF6B35,#FFD93D)',borderRadius:'20px',textAlign:'center',textDecoration:'none',color:'#1B1B1B',fontWeight:'900',fontSize:'18px'}}>
+            ▶ Commencer ma session du jour
+          </a>
+        ) : (
+          <div style={{padding:'20px',background:'#1B3A6B',borderRadius:'20px',textAlign:'center'}}>
+            <div style={{fontSize:'16px',fontWeight:'700',color:'#FFD93D'}}>⏳ Compte en attente d activation</div>
+            <div style={{fontSize:'13px',color:'#9CA3AF',marginTop:'8px'}}>Contactez-nous sur WhatsApp pour activer votre accès</div>
+          </div>
+        )}
+        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/auth/login' }}
+          style={{width:'100%',marginTop:'16px',padding:'12px',background:'transparent',border:'1px solid #374151',borderRadius:'12px',color:'#6B7280',cursor:'pointer',fontSize:'14px'}}>
+          Se déconnecter
+        </button>
       </div>
     </div>
   )
