@@ -1,9 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import type { Database } from '@/types/database'
 
-// ─── Browser client (composants client) ─────────────────────
 export function createClient() {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,9 +9,9 @@ export function createClient() {
   )
 }
 
-// ─── Server client (server components, API routes) ──────────
 export async function createServerSupabaseClient() {
-  const cookieStore = cookies()
+  const { cookies } = await import('next/headers')
+  const cookieStore = await cookies()
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -32,7 +30,6 @@ export async function createServerSupabaseClient() {
   )
 }
 
-// ─── Admin client (service role — panel admin uniquement) ────
 export function createAdminClient() {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
