@@ -41,14 +41,14 @@ export default async function AdminPage() {
     ? Math.round(activeChildren.reduce((a: any, c: any) => a + (c.current_session / 60) * 100, 0) / activeChildren.length)
     : 0
 
-  const sessionsThisWeek = sessions.filter(s => new Date(s.completed_at) >= subDays(new Date(), 7))
-  const sessionsThisMonth = sessions.filter(s => new Date(s.completed_at) >= startOfMonth(new Date()))
+  const sessionsThisWeek = sessions.filter((s: any) => new Date(s.completed_at) >= subDays(new Date(), 7))
+  const sessionsThisMonth = sessions.filter((s: any) => new Date(s.completed_at) >= startOfMonth(new Date()))
   const avgScore = sessions.length > 0
-    ? Math.round(sessions.reduce((a, s) => a + (s.score / Math.max(s.total_questions, 1)) * 100, 0) / sessions.length)
+    ? Math.round(sessions.reduce((a: any, s: any) => a + (s.score / Math.max(s.total_questions, 1)) * 100, 0) / sessions.length)
     : 0
 
-  const completedPrograms = children.filter((c: any) => c.current_session >= 60).length
-  const atRisk = activeChildren.filter(c => {
+  const completedPrograms = children.filter((c: any) => (c as any).current_session >= 60).length
+  const atRisk = activeChildren.filter((c: any) => {
     if (!c.last_session_at) return true
     return Math.floor((Date.now() - new Date(c.last_session_at).getTime()) / 86400000) >= 3
   })
@@ -56,7 +56,7 @@ export default async function AdminPage() {
   const sessionsByDay = Array.from({ length: 30 }, (_, i) => {
     const date = subDays(new Date(), 29 - i)
     const dateStr = format(date, 'yyyy-MM-dd')
-    const count = sessions.filter(s => s.completed_at?.startsWith(dateStr)).length
+    const count = sessions.filter((s: any) => (s as any).completed_at?.startsWith(dateStr)).length
     return { date: format(date, 'dd/MM', { locale: fr }), count }
   })
 
