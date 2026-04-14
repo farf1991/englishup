@@ -38,7 +38,7 @@ export default async function AdminPage() {
 
   const activeChildren = children.filter((c: any) => (c as any).status === 'active')
   const avgCompletion = activeChildren.length > 0
-    ? Math.round(activeChildren.reduce((a, c) => a + (c.current_session / 60) * 100, 0) / activeChildren.length)
+    ? Math.round(activeChildren.reduce((a: any, c: any) => a + (c.current_session / 60) * 100, 0) / activeChildren.length)
     : 0
 
   const sessionsThisWeek = sessions.filter(s => new Date(s.completed_at) >= subDays(new Date(), 7))
