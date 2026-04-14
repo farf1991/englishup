@@ -32,8 +32,8 @@ export default async function AdminPage() {
   const sessions = allSessions || []
   const bilans = allBilans || []
 
-  const pending = all.filter(e => e.payment_status === 'pending')
-  const active = all.filter(e => e.payment_status === 'confirmed')
+  const pending = all.filter((e: any) => (e as any).payment_status === 'pending')
+  const active = all.filter((e: any) => (e as any).payment_status === 'confirmed')
   const totalRevenueDHS = active.length * 379
 
   const activeChildren = children.filter(c => c.status === 'active')
