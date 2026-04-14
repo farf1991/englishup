@@ -36,7 +36,7 @@ export default async function AdminPage() {
   const active = all.filter((e: any) => (e as any).payment_status === 'confirmed')
   const totalRevenueDHS = active.length * 379
 
-  const activeChildren = children.filter(c => c.status === 'active')
+  const activeChildren = children.filter((c: any) => c.status === 'active')
   const avgCompletion = activeChildren.length > 0
     ? Math.round(activeChildren.reduce((a, c) => a + (c.current_session / 60) * 100, 0) / activeChildren.length)
     : 0
@@ -47,7 +47,7 @@ export default async function AdminPage() {
     ? Math.round(sessions.reduce((a, s) => a + (s.score / Math.max(s.total_questions, 1)) * 100, 0) / sessions.length)
     : 0
 
-  const completedPrograms = children.filter(c => c.current_session >= 60).length
+  const completedPrograms = children.filter((c: any) => c.current_session >= 60).length
   const atRisk = activeChildren.filter(c => {
     if (!c.last_session_at) return true
     return Math.floor((Date.now() - new Date(c.last_session_at).getTime()) / 86400000) >= 3
