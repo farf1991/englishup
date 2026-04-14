@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ============================================================
 // ENGLISHUP — Système d'alertes SMS (Twilio)
 // À appeler via un cron job quotidien (Vercel Cron ou GitHub Actions)

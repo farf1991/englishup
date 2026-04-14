@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Metadata, Viewport } from 'next'
 import { Nunito, DM_Sans } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'

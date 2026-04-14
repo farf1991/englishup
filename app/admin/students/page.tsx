@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'

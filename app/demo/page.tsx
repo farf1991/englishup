@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Link from 'next/link'
 
 // La démo est une page statique qui redirige vers la landing

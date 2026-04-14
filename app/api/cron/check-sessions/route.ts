@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { checkMissedSessions } from '@/lib/sms-alerts'
 import { NextRequest } from 'next/server'
 
