@@ -36,7 +36,7 @@ export default async function AdminPage() {
   const active = all.filter((e: any) => (e as any).payment_status === 'confirmed')
   const totalRevenueDHS = active.length * 379
 
-  const activeChildren = children.filter((c: any) => c.status === 'active')
+  const activeChildren = children.filter((c: any) => (c as any).status === 'active')
   const avgCompletion = activeChildren.length > 0
     ? Math.round(activeChildren.reduce((a, c) => a + (c.current_session / 60) * 100, 0) / activeChildren.length)
     : 0
